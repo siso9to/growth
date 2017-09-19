@@ -5,6 +5,17 @@ import (
 	"html/template"
 	"github.com/labstack/echo"
 	"io"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gocraft/dbr"
+	"fmt"
+	"os"
+)
+
+type (
+	Users struct {
+		Id      int64   `db:"id"`
+		Name    string  `db:"name"`
+	}
 )
 
 type Template struct {
@@ -33,6 +44,20 @@ func main() {
 
 	e.Renderer = t
 
+	conn, err := dbr.Open("mysql", "root@tcp(127.0.0.1:3306)/growth_development", nil)
+	if err != nil{
+		fmt.Fprintf(os.Stderr, "エラー：%d", err)
+		os.Exit(1)
+	}
+
+	session := conn.NewSession(nil)
+
+	var user []Users
+
+	session.Select("*").From("users").Load(&user)
+
+	fmt.Printf("%s", user)
+
 	e.GET("/welcome", func(c echo.Context) error {
 		// テンプレートに渡す値
 		data := struct {
@@ -40,7 +65,7 @@ func main() {
 			Content string
 		} {
 			ServiceInfo: serviceInfo,
-			Content: "ようこそ",
+			Content:  user[0].Name,
 		}
 		return c.Render(http.StatusOK, "welcome", data)
 	})
