@@ -50,15 +50,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	session := conn.NewSession(nil)
-
-	var user []Users
-
-	session.Select("*").From("users").Load(&user)
-
-	fmt.Printf("%s", user)
 
 	e.GET("/welcome", func(c echo.Context) error {
+		var user []Users
+		session := conn.NewSession(nil)
+		session.Select("*").From("users").Load(&user)
+
 		// テンプレートに渡す値
 		data := struct {
 			ServiceInfo
@@ -68,6 +65,29 @@ func main() {
 			Content:  user[0].Name,
 		}
 		return c.Render(http.StatusOK, "welcome", data)
+	})
+
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Hello, World!")
+	})
+
+	e.GET("/users/:id", func(c echo.Context) error {
+		var user []Users
+
+		session := conn.NewSession(nil)
+
+		id := c.Param("id")
+
+		fmt.Println(id)
+
+		session.Select("*").
+		From("users").
+		Where("id = ?", id).
+		Load(&user)
+
+		fmt.Printf("%v", user)
+
+		return c.String(http.StatusOK, user[0].Name)
 	})
 
 	e.Logger.Fatal(e.Start(":1323"))
